@@ -1,8 +1,3 @@
-// Email:
-//TKS@gmail.com
-
-// Password:
-// TkS@12345
 
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcrypt";

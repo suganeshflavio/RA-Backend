@@ -52,7 +52,7 @@ export default {
     let filePath = url.pathname;
 
     // Incoming URL:
-    // /file/tksacademy-media/videos/demo.mp4
+    // /file/ramarsacademy-media/videos/demo.mp4
 
     const prefix = `/file/${env.B2_BUCKET_NAME}/`;
 

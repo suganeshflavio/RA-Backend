@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "tksacademy-b2-cdn",
+	"name": "ramarsacademy-b2-cdn",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-07-30",
 	"compatibility_flags": [
@@ -19,7 +19,7 @@
 		"enabled": true
 	},
 	"vars": {
-    "B2_BUCKET_NAME": "tksacademy-media",
+    "B2_BUCKET_NAME": "ramarsacademy-multimedia",
     "B2_DOWNLOAD_URL": "https://f005.backblazeb2.com"
   },
 	"upload_source_maps": true

@@ -20,7 +20,7 @@ headers so seeking works.
    `(await authorizeB2()).downloadUrl` from `src/config/b2.ts`.
 4. Put that host in `wrangler.toml` under `[vars] B2_DOWNLOAD_HOST`.
 5. From this folder: `npm install && npm run deploy`.
-6. In the Cloudflare dashboard: Workers & Pages → `tksacademy-b2-cdn` →
+6. In the Cloudflare dashboard: Workers & Pages → `ramarsacademy-b2-cdn` →
    Settings → Domains & Routes → add a custom domain (e.g.
    `cdn.yourdomain.com`). This requires the domain's DNS to already be on
    Cloudflare (orange-clouded).
