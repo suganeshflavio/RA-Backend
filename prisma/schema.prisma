@@ -1,0 +1,338 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db` output   = "../src/generated/prisma" role         String   @default("student")
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum OptionChoice {
+  A
+  B
+  C
+  D
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id String @id @default(cuid())
+
+  name String
+
+  email String @unique
+
+  mobile String? @unique
+
+  class String?
+
+  password String
+
+  role Role @default(STUDENT)
+
+  deviceId String?
+
+  accesses UserAccess[]
+
+  sessionToken String?
+
+  isActive Boolean @default(true)
+
+  isAccess Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  comments Comment[]
+
+  testimonials Testimonial[]
+
+  studentAttempts StudentAttempt[]
+}
+
+model Course {
+  id String @id @default(cuid())
+
+  courseName String @unique
+
+  thumbnail String?
+
+  accessType String?
+
+  price Int?
+
+  strikePrice Int?
+
+  userAccesses UserAccess[]
+
+  validityMonths Int?
+
+  enableEmi Boolean?
+
+  installments Json?
+
+  subjects String[]
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  videos Video[]
+}
+
+model Video {
+  id String @id @default(cuid())
+
+  courseId String
+
+  subject String?
+
+  chapter String?
+
+  videoName String
+
+  videoFileId String?
+
+  videoFileName String?
+
+  videoSize Int?
+
+  notesUrl String?
+
+  notesFileId String?
+
+  notesFileName String?
+
+  description String?
+
+  duration String?
+
+  order Int?
+
+  isActive Boolean @default(true)
+
+  isPreview Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  userAccesses UserAccess[]
+
+  comments Comment[]
+
+  tests TestQuestion[]
+
+  attempts StudentAttempt[]
+}
+
+model Comment {
+  id String @id @default(cuid())
+
+  videoId String
+  userId  String
+
+  message String
+
+  parentId String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  parent Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([videoId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Testimonial {
+  id String @id @default(cuid())
+
+  userId String
+
+  star Int
+
+  review String
+
+  isActive Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserAccess {
+  id String @id @default(cuid())
+
+  userId   String
+  courseId String
+  videoId  String
+
+  subject String
+  chapter String
+
+  isActive Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([videoId])
+}
+
+model TestQuestion {
+  id String @id @default(cuid())
+
+  videoId String
+
+  testName String
+
+  marksPerQuestion Int
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  questions TestQuestionItem[]
+
+  attempts StudentAttempt[]
+
+  @@index([videoId])
+}
+
+model TestQuestionItem {
+  id String @id @default(cuid())
+
+  testId String
+
+  question String
+
+  optionA String
+
+  optionB String
+
+  optionC String
+
+  optionD String
+
+  correctOption OptionChoice
+
+  explanation String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  test TestQuestion @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  attemptAnswers StudentAttemptAnswer[]
+
+  @@index([testId])
+}
+
+model StudentAttempt {
+  id String @id @default(cuid())
+
+  studentId String
+
+  videoId String
+
+  testId String
+
+  status AttemptStatus @default(COMPLETED)
+
+  totalQuestions Int
+
+  correctAnswers Int
+
+  wrongAnswers Int
+
+  marksPerQuestion Int
+
+  totalMarks Int
+
+  obtainedMarks Int
+
+  startedAt DateTime
+
+  submittedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  test TestQuestion @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  answers StudentAttemptAnswer[]
+
+  @@index([studentId])
+  @@index([videoId])
+  @@index([testId])
+  @@index([status])
+}
+
+model StudentAttemptAnswer {
+  id String @id @default(cuid())
+
+  attemptId String
+
+  questionId String
+
+  selectedOption OptionChoice
+
+  isCorrect Boolean
+
+  createdAt DateTime @default(now())
+
+  attempt StudentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  question TestQuestionItem @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([questionId])
+  @@unique([attemptId, questionId])
+}

@@ -1,0 +1,11 @@
+name = "tksacademy-b2-cdn"
+main = "src/index.ts"
+compatibility_date = "2026-07-27"
+
+[vars]
+B2_DOWNLOAD_HOST = "f005.backblazeb2.com"
+
+# After first deploy, attach a custom domain/route in the Cloudflare
+# dashboard (Workers & Pages > tksacademy-b2-cdn > Settings > Domains &
+# Routes), e.g. cdn.yourdomain.com, then set CDN_BASE_URL=https://cdn.yourdomain.com
+# in the backend's .env.
