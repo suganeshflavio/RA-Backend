@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 async function main() {
   const admin = await prisma.user.findUnique({
     where: {
-      email: "admin@tksacademy.com",
+      email: "admin@ramarsacademy.com",
     },
   });
 
@@ -21,12 +21,12 @@ async function main() {
     return;
   }
 
-  const hashedPassword = await bcrypt.hash("TkSaDmIn@12345", 10);
+  const hashedPassword = await bcrypt.hash("RaMaRsAdMiN@12345", 10);
 
   await prisma.user.create({
     data: {
-      name: "TKS Admin",
-      email: "admin@tksacademy.com",
+      name: "RA Admin",
+      email: "admin@ramarsacademy.com",
       password: hashedPassword,
       role: Role.ADMIN,
     },

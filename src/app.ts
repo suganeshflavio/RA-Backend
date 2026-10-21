@@ -42,7 +42,7 @@ app.use(
 
 app.get("/", (_, res) => {
   res.json({
-    message: "Tks Academy Backend Running",
+    message: "Ramar's Academy Backend Running",
   });
 });
 

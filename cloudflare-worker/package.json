@@ -1,5 +1,5 @@
 {
-  "name": "tksacademy-b2-cdn-worker",
+  "name": "ramarsacademy-b2-cdn-worker",
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
