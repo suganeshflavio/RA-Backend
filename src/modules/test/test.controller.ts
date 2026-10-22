@@ -16,7 +16,7 @@ import {
   deleteTestService,
   getMyAttemptsService,
   getStudentTestByIdService,
-  getStudentTestsByVideoIdService,
+  getStudentTestsByTopicIdService,
   getStudentAttemptByIdAdminService,
   getStudentAttemptsAdminService,
   getTestByIdService,
@@ -39,7 +39,7 @@ export const getTests = asyncHandler(async (req: Request, res: Response) => {
     page: req.query.page ? Number(req.query.page) : 1,
     limit: req.query.limit ? Number(req.query.limit) : 10,
     search: req.query.search as string,
-    videoId: req.query.videoId as string,
+    topicId: req.query.topicId as string,
   });
 
   return successResponse(res, "Tests fetched successfully", data);
@@ -51,10 +51,10 @@ export const getTestById = asyncHandler(async (req: Request, res: Response) => {
   return successResponse(res, "Test fetched successfully", test);
 });
 
-export const getStudentTestsByVideoId = asyncHandler(
+export const getStudentTestsByTopicId = asyncHandler(
   async (req: Request, res: Response) => {
-    const tests = await getStudentTestsByVideoIdService(
-      req.params.videoId as string,
+    const tests = await getStudentTestsByTopicIdService(
+      req.params.topicId as string,
     );
 
     return successResponse(res, "Student tests fetched successfully", tests);

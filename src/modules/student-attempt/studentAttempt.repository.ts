@@ -16,14 +16,6 @@ const attemptInclude = {
     select: {
       id: true,
       videoName: true,
-      subject: true,
-      chapter: true,
-      course: {
-        select: {
-          id: true,
-          courseName: true,
-        },
-      },
     },
   },
   test: {

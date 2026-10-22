@@ -1,11 +1,5 @@
 export interface CreateVideoDto {
 
-    courseId: string;
-
-    subject?: string;
-
-    chapter?: string;
-
     videoName: string;
 
     videoFileId: string;
@@ -14,15 +8,9 @@ export interface CreateVideoDto {
 
     videoSize?: number;
 
-    notesFileId?: string;
-
-    notesFileName?: string;
-
     description?: string;
 
     duration?: string;
-
-    order?: number;
 
     isPreview?: boolean;
 
@@ -37,12 +25,6 @@ export interface GetVideoQueryDto {
     limit?: number;
 
     search?: string;
-
-    courseId?: string;
-
-    subject?: string;
-
-    chapter?: string;
 
     isActive?: boolean;
 

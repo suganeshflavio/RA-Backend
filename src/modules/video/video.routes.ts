@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { upload } from "../../middleware/upload.middleware";
 import { authenticate } from "../../middleware/auth.middleware";
 import { isAdmin } from "../../middleware/admin.middleware";
 
@@ -30,8 +29,6 @@ router.get(
 
   authenticate,
 
-  isAdmin,
-
   getVideos,
 );
 
@@ -39,11 +36,10 @@ router.post(
     "/",
     authenticate,
     isAdmin,
-    upload.single("notesUrl"),
     createVideo
 );
 
-router.get("/:id", authenticate, isAdmin, getVideoById);
+router.get("/:id", authenticate, getVideoById);
 
 router.put(
   "/:id",
@@ -51,8 +47,6 @@ router.put(
   authenticate,
 
   isAdmin,
-
-  upload.single("notesUrl"),
 
   updateVideo,
 );

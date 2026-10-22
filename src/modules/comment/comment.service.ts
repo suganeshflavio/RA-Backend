@@ -71,12 +71,6 @@ export const getAdminCommentsService = async (
 
         videoId: video.id,
 
-        courseName: video.course.courseName,
-
-        subjectName: video.subject,
-
-        chapterName: video.chapter,
-
         videoName: video.videoName,
 
         comments: video.comments.map((comment) => ({

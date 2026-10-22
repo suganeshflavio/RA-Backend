@@ -9,7 +9,7 @@ import {
   getAttemptByIdForTestAdmin,
   getAttemptsByTestIdAdmin,
   getStudentTestById,
-  getStudentTestsByVideoId,
+  getStudentTestsByTopicId,
   getTestById,
   getTests,
   submitAttempt,
@@ -21,7 +21,7 @@ const router = Router();
 
 router.post("/", authenticate, requireAdmin, createTest);
 router.get("/", authenticate, requireAdmin, getTests);
-router.get("/student/video/:videoId", authenticate, getStudentTestsByVideoId);
+router.get("/student/topic/:topicId", authenticate, getStudentTestsByTopicId);
 router.get("/student/:id", authenticate, getStudentTestById);
 router.get("/:id", authenticate, requireAdmin, getTestById);
 router.put("/:id", authenticate, requireAdmin, updateTest);

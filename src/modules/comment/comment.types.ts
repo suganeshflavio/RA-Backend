@@ -12,8 +12,5 @@ export interface ReplyCommentDto {
 export interface GetAdminCommentsQueryDto {
     page?: number;
     limit?: number;
-    courseName?: string;
-    subjectName?: string;
-    chapterName?: string;
     videoName?: string;
 }

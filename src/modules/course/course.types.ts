@@ -7,7 +7,7 @@ export interface InstallmentDto {
 
 export interface CreateCourseDto {
     courseName: string;
-    // description?: string;
+
     thumbnail?: string;
 
     accessType?: "free" | "paid";
@@ -21,8 +21,6 @@ export interface CreateCourseDto {
     enableEmi?: boolean;
 
     installments?: Prisma.InputJsonValue;
-
-    subjects: string[];
 }
 
 export interface GetCourseQueryDto {
@@ -36,4 +34,24 @@ export interface UpdateCourseDto extends Partial<CreateCourseDto> {
 
     isActive?: boolean;
 
+}
+
+export interface LinkSubjectDto {
+    subjectId: string;
+    order?: number;
+}
+
+export interface LinkVideoDto {
+    videoId: string;
+    order?: number;
+}
+
+export interface LinkNotesDto {
+    notesId: string;
+    order?: number;
+}
+
+export interface LinkMcqTestDto {
+    testId: string;
+    order?: number;
 }

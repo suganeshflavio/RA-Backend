@@ -16,13 +16,11 @@ const requiredEnv = [
   "B2_BUCKET_ID",
   "B2_BUCKET_NAME",
   "B2_CORS_ORIGINS",
-  "CLOUDINARY_API_KEY",
-  "CLOUDINARY_API_SECRET",
-  "CLOUDINARY_CLOUD_NAME",
   "JWT_EXPIRES_IN",
   "PORT",
   "DIRECT_URL",
-  "CDN_BASE_URL"
+  "CDN_BASE_URL",
+  "API_BASE_URL"
 ];
 
 for (const key of requiredEnv) {
@@ -44,4 +42,10 @@ export const env = {
     | `${number}h`
     | `${number}m`
     | `${number}s`,
+
+  // Backend's own publicly-reachable base URL (no trailing slash) — used to
+  // build the stable /api/uploads/image/:id link embedded in stored
+  // rich-text HTML. Must point at wherever this API is actually reachable
+  // from a browser/app, not just localhost, once deployed.
+  API_BASE_URL: (process.env.API_BASE_URL ?? `http://localhost:${Number(process.env.PORT) || 5000}`).replace(/\/$/, ""),
 };

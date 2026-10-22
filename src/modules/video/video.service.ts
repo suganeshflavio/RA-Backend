@@ -1,11 +1,9 @@
 import { AppError } from "../../utils/errors/AppError";
 import { CreateVideoDto, GetVideoQueryDto, UpdateVideoDto } from "./video.types";
 import { getB2SignedUrl, getB2UploadUrl, sanitizeFileName, encodeB2FileName, deleteB2File } from "../../utils/b2";
-import { deleteFromCloudinary } from "../../utils/uploadToCloudinary";
 import {
     createVideoRepository,
     deactivateVideoAccessRepository,
-    getCourseRepository,
     getVideoByIdRepository,
     getVideosRepository,
     updateVideoRepository,
@@ -15,7 +13,6 @@ import {
 
 const enrichVideo = async <T extends {
     videoFileName: string | null;
-    notesUrl: string | null;
 }>(video: T) => {
 
     const videoUrl = video.videoFileName
@@ -32,16 +29,6 @@ const enrichVideo = async <T extends {
 export const createVideoService = async (
     payload: CreateVideoDto
 ) => {
-
-    const course = await getCourseRepository(payload.courseId);
-
-    if (!course) {
-        throw new AppError("Course not found", 404);
-    }
-
-    if (!course.isActive) {
-        throw new AppError("Course is inactive", 400);
-    }
 
     return createVideoRepository(payload);
 
@@ -108,40 +95,6 @@ export const updateVideoService = async (
 
     }
 
-    if (payload.courseId) {
-
-        const course = await getCourseRepository(
-
-            payload.courseId
-
-        );
-
-        if (!course) {
-
-            throw new AppError(
-
-                "Course not found",
-
-                404
-
-            );
-
-        }
-
-        if (!course.isActive) {
-
-            throw new AppError(
-
-                "Course is inactive",
-
-                400
-
-            );
-
-        }
-
-    }
-
     const updatedVideo = await updateVideoRepository(
 
         videoId,
@@ -158,16 +111,6 @@ export const updateVideoService = async (
     ) {
 
         await deleteB2File(video.videoFileId, video.videoFileName).catch(() => {});
-
-    }
-
-    if (
-        payload.notesFileId &&
-        video.notesFileId &&
-        payload.notesFileId !== video.notesFileId
-    ) {
-
-        await deleteFromCloudinary(video.notesFileId);
 
     }
 
@@ -222,14 +165,9 @@ export const permanentDeleteVideoService = async (
         throw new AppError("Video not found", 404);
     }
 
-    await Promise.all([
-        video.videoFileId && video.videoFileName
-            ? deleteB2File(video.videoFileId, video.videoFileName)
-            : Promise.resolve(),
-        video.notesFileId
-            ? deleteFromCloudinary(video.notesFileId)
-            : Promise.resolve()
-    ]);
+    if (video.videoFileId && video.videoFileName) {
+        await deleteB2File(video.videoFileId, video.videoFileName);
+    }
 
     await permanentDeleteVideoRepository(videoId);
 
@@ -238,10 +176,10 @@ export const permanentDeleteVideoService = async (
 };
 
 export const requestVideoUploadUrlService = async (
-    payload: { fileName: string; courseId?: string }
+    payload: { fileName: string }
 ) => {
 
-    const key = `videos/${payload.courseId ?? "misc"}/${Date.now()}-${sanitizeFileName(payload.fileName)}`;
+    const key = `videos/${Date.now()}-${sanitizeFileName(payload.fileName)}`;
 
     const { uploadUrl, authorizationToken } = await getB2UploadUrl();
 

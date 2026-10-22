@@ -21,7 +21,7 @@ import {
   getStudentAttemptsRepository,
   getTestByIdRepository,
   getTestWithQuestionsRepository,
-  getTestsWithQuestionsByVideoIdRepository,
+  getTestsWithQuestionsByTopicIdRepository,
   getTestsRepository,
   getVideoByIdRepository,
   updateQuestionRepository,
@@ -62,12 +62,11 @@ const formatAttempt = (attempt: any): AttemptDetails => ({
 
 const formatStudentTest = (test: any) => ({
   id: test.id,
-  videoId: test.videoId,
   testName: test.testName,
   marksPerQuestion: test.marksPerQuestion,
   createdAt: test.createdAt,
   updatedAt: test.updatedAt,
-  video: test.video,
+  topics: test.topics,
   questions: test.questions.map((question: any) => ({
     id: question.id,
     question: question.question,
@@ -79,12 +78,6 @@ const formatStudentTest = (test: any) => ({
 });
 
 export const createTestService = async (payload: CreateTestDto) => {
-  const video = await getVideoByIdRepository(payload.videoId);
-
-  if (!video) {
-    throw new AppError("Video not found", 404);
-  }
-
   return createTestRepository(payload);
 };
 
@@ -123,8 +116,8 @@ export const getStudentTestByIdService = async (testId: string) => {
   return formatStudentTest(test);
 };
 
-export const getStudentTestsByVideoIdService = async (videoId: string) => {
-  const tests = await getTestsWithQuestionsByVideoIdRepository(videoId);
+export const getStudentTestsByTopicIdService = async (topicId: string) => {
+  const tests = await getTestsWithQuestionsByTopicIdRepository(topicId);
 
   return tests.map(formatStudentTest);
 };
@@ -134,14 +127,6 @@ export const updateTestService = async (testId: string, payload: UpdateTestDto) 
 
   if (!existing) {
     throw new AppError("Test not found", 404);
-  }
-
-  if (payload.videoId) {
-    const video = await getVideoByIdRepository(payload.videoId);
-
-    if (!video) {
-      throw new AppError("Video not found", 404);
-    }
   }
 
   return updateTestRepository(testId, payload);
@@ -206,8 +191,12 @@ export const submitAttemptService = async (
     throw new AppError("Test not found", 404);
   }
 
-  if (payload.videoId !== test.videoId) {
-    throw new AppError("videoId does not belong to this test", 400);
+  if (payload.videoId) {
+    const video = await getVideoByIdRepository(payload.videoId);
+
+    if (!video) {
+      throw new AppError("Video not found", 404);
+    }
   }
 
   if (test.questions.length === 0) {

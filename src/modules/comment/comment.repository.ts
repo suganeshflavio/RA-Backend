@@ -104,35 +104,6 @@ export const getAdminCommentsRepository = async (
 
     };
 
-    if (query.courseName) {
-
-        where.course = {
-            courseName: {
-                contains: query.courseName,
-                mode: "insensitive"
-            }
-        };
-
-    }
-
-    if (query.subjectName) {
-
-        where.subject = {
-            contains: query.subjectName,
-            mode: "insensitive"
-        };
-
-    }
-
-    if (query.chapterName) {
-
-        where.chapter = {
-            contains: query.chapterName,
-            mode: "insensitive"
-        };
-
-    }
-
     if (query.videoName) {
 
         where.videoName = {
@@ -149,11 +120,6 @@ export const getAdminCommentsRepository = async (
             where,
 
             include: {
-                course: {
-                    select: {
-                        courseName: true
-                    }
-                },
                 comments: {
                     orderBy: {
                         createdAt: "asc"

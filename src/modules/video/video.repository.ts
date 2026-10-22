@@ -12,18 +12,6 @@ export const createVideoRepository = async (
 
 };
 
-export const getCourseRepository = async (
-    courseId: string
-) => {
-
-    return prisma.course.findUnique({
-        where: {
-            id: courseId
-        }
-    });
-
-};
-
 export const getVideosRepository = async (
 
     query: GetVideoQueryDto
@@ -37,36 +25,6 @@ export const getVideosRepository = async (
     const skip = (page - 1) * limit;
 
     const where: Prisma.VideoWhereInput = {};
-
-    if (query.courseId) {
-
-        where.courseId = query.courseId;
-
-    }
-
-    if (query.subject) {
-
-        where.subject = {
-
-            equals: query.subject,
-
-            mode: "insensitive"
-
-        };
-
-    }
-
-    if (query.chapter) {
-
-        where.chapter = {
-
-            equals: query.chapter,
-
-            mode: "insensitive"
-
-        };
-
-    }
 
     if (query.search) {
 
@@ -94,13 +52,13 @@ export const getVideosRepository = async (
 
             include: {
 
-                course: {
+                topics: {
 
                     select: {
 
                         id: true,
 
-                        courseName: true
+                        name: true
 
                     }
 
@@ -151,22 +109,47 @@ export const getVideoByIdRepository = async (
 
         },
 
-         include: {
+        include: {
 
-            course: {
+            topics: {
 
                 select: {
 
                     id: true,
 
-                    courseName: true
+                    name: true
+
+                }
+
+            },
+
+            courses: {
+
+                select: {
+
+                    courseId: true,
+
+                    order: true,
+
+                    isActive: true,
+
+                    course: {
+
+                        select: {
+
+                            id: true,
+
+                            courseName: true
+
+                        }
+
+                    }
 
                 }
 
             }
 
         }
-
 
     });
 

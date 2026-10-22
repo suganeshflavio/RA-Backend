@@ -1,129 +1,13 @@
-// import prisma from "../../config/prisma";
-
-// export const assignUserAccessService = async (
-//     userId: string,
-//     accesses: {
-//         courseId: string;
-//         subject: string;
-//         chapter: string;
-//     }[]
-// ) => {
-
-//     // Remove previous access
-
-//     await prisma.userAccess.deleteMany({
-//         where: {
-//             userId
-//         }
-//     });
-
-//     // Insert new access
-
-//     await prisma.userAccess.createMany({
-//         data: accesses.map((access) => ({
-//             userId,
-//             courseId: access.courseId,
-//             subject: access.subject,
-//             chapter: access.chapter
-//         })),
-//         skipDuplicates: true
-//     });
-
-//     return true;
-// };
-
-
-
-// import prisma from "../../config/prisma";
-
-// export const assignUserAccessService = async (
-//   userId: string,
-//   courseId: string,
-//   subject: string,
-//   chapters: string[]
-// ) => {
-//   // 1. Check User
-
-//   const user = await prisma.user.findUnique({
-//     where: {
-//       id: userId,
-//     },
-//   });
-
-//   if (!user) {
-//     throw new Error("User not found");
-//   }
-
-//   // 2. Check Course
-
-//   const course = await prisma.course.findUnique({
-//     where: {
-//       id: courseId,
-//     },
-//   });
-
-//   if (!course) {
-//     throw new Error("Course not found");
-//   }
-
-//   // 3. Check Subject
-
-//   if (!course.subjects.includes(subject)) {
-//     throw new Error("Invalid subject selected");
-//   }
-
-//   // 4. Validate Chapters
-
-//   for (const chapter of chapters) {
-//     const exists = await prisma.video.count({
-//       where: {
-//         courseId,
-//         subject,
-//         chapter,
-//       },
-//     });
-
-//     if (exists === 0) {
-//       throw new Error(`${chapter} does not exist`);
-//     }
-//   }
-
-//   // 5. Remove previous access for this course + subject
-
-//   await prisma.userAccess.deleteMany({
-//     where: {
-//       userId,
-//       courseId,
-//       subject,
-//     },
-//   });
-
-//   // 6. Create new access
-
-//   await prisma.userAccess.createMany({
-//     data: chapters.map((chapter) => ({
-//       userId,
-//       courseId,
-//       subject,
-//       chapter,
-//     })),
-//     skipDuplicates: true,
-//   });
-
-//   return true;
-// };
-
-
 import prisma from "../../config/prisma";
+import { AppError } from "../../utils/errors/AppError";
 
 export const assignUserAccessService = async (
   userId: string,
   courses: {
     courseId: string;
-    subjects: {
-      subject: string;
-      chapters: string[];
-    }[];
+    videoIds?: string[];
+    notesIds?: string[];
+    testIds?: string[];
   }[]
 ) => {
 
@@ -132,15 +16,15 @@ export const assignUserAccessService = async (
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new AppError("User not found", 404);
   }
 
   // Remove all previous access
-  await prisma.userAccess.deleteMany({
-    where: {
-      userId,
-    },
-  });
+  await Promise.all([
+    prisma.userAccess.deleteMany({ where: { userId } }),
+    prisma.userNotesAccess.deleteMany({ where: { userId } }),
+    prisma.userMcqTestAccess.deleteMany({ where: { userId } }),
+  ]);
 
   for (const courseItem of courses) {
 
@@ -151,66 +35,96 @@ export const assignUserAccessService = async (
     });
 
     if (!course) {
-      throw new Error(`Course not found: ${courseItem.courseId}`);
+      throw new AppError(`Course not found: ${courseItem.courseId}`, 404);
     }
 
-    for (const subjectItem of courseItem.subjects) {
+    for (const videoId of courseItem.videoIds ?? []) {
 
-      if (!course.subjects.includes(subjectItem.subject)) {
-        throw new Error(
-          `Subject '${subjectItem.subject}' not found in course '${course.courseName}'`
+      const courseVideo = await prisma.courseVideo.findFirst({
+        where: {
+          courseId: courseItem.courseId,
+          videoId,
+        },
+      });
+
+      if (!courseVideo) {
+        throw new AppError(
+          `Video '${videoId}' is not linked to course '${course.courseName}'`,
+          400
         );
       }
 
-      for (const chapter of subjectItem.chapters) {
+      await prisma.userAccess.create({
+        data: {
+          userId,
+          courseId: courseItem.courseId,
+          videoId,
+        },
+      });
 
-        // const videoExists = await prisma.video.findFirst({
-        //   where: {
-        //     courseId: courseItem.courseId,
-        //     subject: subjectItem.subject,
-        //     chapter,
-        //     isActive: true
-        //   },
-        // });
+    }
 
-        // if (!videoExists) {
-        //   throw new Error(
-        //     `Chapter '${chapter}' not found under '${subjectItem.subject}'`
-        //   );
-        // }
-const video = await prisma.video.findFirst({
-  where: {
-    courseId: courseItem.courseId,
-    subject: subjectItem.subject,
-    chapter,
-    isActive: true
-  }
-});
+    for (const notesId of courseItem.notesIds ?? []) {
 
-if (!video) {
-    throw new Error(`${chapter} not found`);
-}
-        await prisma.userAccess.create({
-          data: {
-            userId,
-            courseId: courseItem.courseId,
-            videoId: video.id,
-            subject: subjectItem.subject,
-            chapter,
-          },
-        });
+      const courseNotes = await prisma.courseNotes.findFirst({
+        where: {
+          courseId: courseItem.courseId,
+          notesId,
+        },
+      });
+
+      if (!courseNotes) {
+        throw new AppError(
+          `Notes '${notesId}' is not linked to course '${course.courseName}'`,
+          400
+        );
       }
+
+      await prisma.userNotesAccess.create({
+        data: {
+          userId,
+          courseId: courseItem.courseId,
+          notesId,
+        },
+      });
+
+    }
+
+    for (const testId of courseItem.testIds ?? []) {
+
+      const courseMcqTest = await prisma.courseMcqTest.findFirst({
+        where: {
+          courseId: courseItem.courseId,
+          testId,
+        },
+      });
+
+      if (!courseMcqTest) {
+        throw new AppError(
+          `MCQ test '${testId}' is not linked to course '${course.courseName}'`,
+          400
+        );
+      }
+
+      await prisma.userMcqTestAccess.create({
+        data: {
+          userId,
+          courseId: courseItem.courseId,
+          testId,
+        },
+      });
+
     }
   }
 
   await prisma.user.update({
-  where: {
-    id: userId,
-  },
-  data: {
-    isAccess: true,
-  },
-});
+    where: {
+      id: userId,
+    },
+    data: {
+      isAccess: true,
+    },
+  });
 
   return true;
 };
@@ -229,63 +143,82 @@ export const getUserAccessByUserIdService = async (
       name: true,
       email: true,
       mobile: true,
+      class: true,
     },
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new AppError("User not found", 404);
   }
 
-  const accesses = await prisma.userAccess.findMany({
-    where: {
-      userId,
-      isActive: true,
-    },
-    include: {
-      course: {
-        select: {
-          id: true,
-          courseName: true,
-        },
+  const [videoAccesses, notesAccesses, testAccesses] = await Promise.all([
+    prisma.userAccess.findMany({
+      where: { userId, isActive: true },
+      include: {
+        course: { select: { id: true, courseName: true } },
+        video: { select: { id: true, videoName: true } },
       },
-    },
-    orderBy: {
-      createdAt: "asc",
-    },
-  });
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.userNotesAccess.findMany({
+      where: { userId, isActive: true },
+      include: {
+        course: { select: { id: true, courseName: true } },
+        notes: { select: { id: true, title: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.userMcqTestAccess.findMany({
+      where: { userId, isActive: true },
+      include: {
+        course: { select: { id: true, courseName: true } },
+        test: { select: { id: true, testName: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
 
-  const courseMap = new Map();
+  const courseMap = new Map<string, {
+    courseId: string;
+    courseName: string;
+    videos: { videoId: string; videoName: string }[];
+    notes: { notesId: string; title: string }[];
+    mcqTests: { testId: string; testName: string }[];
+  }>();
 
-  for (const access of accesses) {
-
-    if (!courseMap.has(access.courseId)) {
-
-      courseMap.set(access.courseId, {
-        courseId: access.course.id,
-        courseName: access.course.courseName,
-        subjects: [],
+  const getCourseEntry = (courseId: string, courseName: string) => {
+    if (!courseMap.has(courseId)) {
+      courseMap.set(courseId, {
+        courseId,
+        courseName,
+        videos: [],
+        notes: [],
+        mcqTests: [],
       });
-
     }
 
-    const course = courseMap.get(access.courseId);
+    return courseMap.get(courseId)!;
+  };
 
-    let subject = course.subjects.find(
-      (x: any) => x.subject === access.subject
-    );
+  for (const access of videoAccesses) {
+    getCourseEntry(access.course.id, access.course.courseName).videos.push({
+      videoId: access.video.id,
+      videoName: access.video.videoName,
+    });
+  }
 
-    if (!subject) {
+  for (const access of notesAccesses) {
+    getCourseEntry(access.course.id, access.course.courseName).notes.push({
+      notesId: access.notes.id,
+      title: access.notes.title,
+    });
+  }
 
-      subject = {
-        subject: access.subject,
-        chapters: [],
-      };
-
-      course.subjects.push(subject);
-
-    }
-
-    subject.chapters.push(access.chapter);
+  for (const access of testAccesses) {
+    getCourseEntry(access.course.id, access.course.courseName).mcqTests.push({
+      testId: access.test.id,
+      testName: access.test.testName,
+    });
   }
 
   return {

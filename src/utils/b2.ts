@@ -1,4 +1,3 @@
-import fs from "fs";
 import crypto from "crypto";
 import { authorizeB2, B2_BUCKET_ID, B2_BUCKET_NAME } from "../config/b2";
 
@@ -58,7 +57,7 @@ export const uploadFileToB2 = async (
 
   const { uploadUrl, authorizationToken } = await getB2UploadUrl();
 
-  const buffer = await fs.promises.readFile(file.path);
+  const buffer = file.buffer;
 
   const sha1 = crypto.createHash("sha1").update(buffer).digest("hex");
 
@@ -73,10 +72,8 @@ export const uploadFileToB2 = async (
       "X-Bz-Content-Sha1": sha1,
       "Content-Length": String(buffer.length)
     },
-    body: buffer
+    body: buffer as unknown as BodyInit
   });
-
-  await fs.promises.unlink(file.path).catch(() => {});
 
   if (!res.ok) {
     throw new Error(`B2 upload failed: ${res.status} ${await res.text()}`);

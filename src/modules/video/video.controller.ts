@@ -12,27 +12,12 @@ import {
     permanentDeleteVideoService,
     requestVideoUploadUrlService
 } from "./video.service";
-import { uploadToCloudinary } from "../../utils/uploadToCloudinary";
 
 export const createVideo = asyncHandler(async (req: Request, res: Response) => {
 
     const payload = createVideoSchema.parse(req.body);
 
-    const data: any = { ...payload };
-
-    if (req.file) {
-
-        const uploaded = await uploadToCloudinary(req.file, `notes/${payload.courseId}`);
-
-        data.notesFileId = uploaded.publicId;
-
-        data.notesFileName = req.file.originalname;
-
-        data.notesUrl = uploaded.url;
-
-    }
-
-    const video = await createVideoService(data);
+    const video = await createVideoService(payload);
 
     return successResponse(
         res,
@@ -65,12 +50,6 @@ export const getVideos = asyncHandler(
                 : 10,
 
             search: req.query.search as string,
-
-            courseId: req.query.courseId as string,
-
-            subject: req.query.subject as string,
-
-            chapter: req.query.chapter as string,
 
             isActive: resolveIsActive(req.query.isActive)
 
@@ -106,25 +85,11 @@ export const updateVideo = asyncHandler(
 
         );
 
-        const data: any = { ...payload };
-
-        if (req.file) {
-
-            const uploaded = await uploadToCloudinary(req.file, `notes/${payload.courseId ?? "misc"}`);
-
-            data.notesFileId = uploaded.publicId;
-
-            data.notesFileName = req.file.originalname;
-
-            data.notesUrl = uploaded.url;
-
-        }
-
         const video = await updateVideoService(
 
             req.params.id as string,
 
-            data
+            payload
 
         );
 

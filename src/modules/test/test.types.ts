@@ -13,14 +13,12 @@ export interface CreateTestQuestionItemDto {
 }
 
 export interface CreateTestDto {
-  videoId: string;
   testName: string;
   marksPerQuestion: number;
   questions: CreateTestQuestionItemDto[];
 }
 
 export interface UpdateTestDto {
-  videoId?: string;
   testName?: string;
   marksPerQuestion?: number;
 }
@@ -41,7 +39,7 @@ export interface GetTestsQueryDto {
   page?: number;
   limit?: number;
   search?: string;
-  videoId?: string;
+  topicId?: string;
 }
 
 export interface SubmitAttemptAnswerDto {
@@ -50,7 +48,7 @@ export interface SubmitAttemptAnswerDto {
 }
 
 export interface SubmitAttemptDto {
-  videoId: string;
+  videoId?: string;
   startedAt: Date;
   submittedAt?: Date;
   status?: AttemptStatus;
@@ -69,7 +67,7 @@ export interface GetAttemptsQueryDto {
 export type AttemptDetails = {
   id: string;
   studentId: string;
-  videoId: string;
+  videoId: string | null;
   testId: string;
   status: AttemptStatus;
   totalQuestions: number;
@@ -91,13 +89,7 @@ export type AttemptDetails = {
   video: {
     id: string;
     videoName: string;
-    subject: string | null;
-    chapter: string | null;
-    course: {
-      id: string;
-      courseName: string;
-    };
-  };
+  } | null;
   test: {
     id: string;
     testName: string;

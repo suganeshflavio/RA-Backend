@@ -49,9 +49,6 @@ export const getAdminComments = asyncHandler(async (req: Request, res: Response)
     const data = await getAdminCommentsService({
         page: req.query.page ? Number(req.query.page) : 1,
         limit: req.query.limit ? Number(req.query.limit) : 10,
-        courseName: req.query.courseName as string,
-        subjectName: req.query.subjectName as string,
-        chapterName: req.query.chapterName as string,
         videoName: req.query.videoName as string
     });
 

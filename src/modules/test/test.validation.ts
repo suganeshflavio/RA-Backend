@@ -15,7 +15,6 @@ const createQuestionSchema = z.object({
 });
 
 export const createTestSchema = z.object({
-  videoId: z.string().min(1, "videoId is required"),
   testName: z.string().min(1, "testName is required"),
   marksPerQuestion: z.coerce.number().int().positive("marksPerQuestion must be > 0"),
   questions: z.array(createQuestionSchema).min(1, "At least one question is required"),
@@ -23,7 +22,6 @@ export const createTestSchema = z.object({
 
 export const updateTestSchema = z
   .object({
-    videoId: z.string().min(1).optional(),
     testName: z.string().min(1).optional(),
     marksPerQuestion: z.coerce.number().int().positive().optional(),
   })
@@ -48,7 +46,7 @@ export const updateQuestionSchema = z
   });
 
 export const submitAttemptSchema = z.object({
-  videoId: z.string().min(1, "videoId is required"),
+  videoId: z.string().min(1).optional(),
   status: attemptStatusEnum.optional(),
   startedAt: z.coerce.date(),
   submittedAt: z.coerce.date().optional(),

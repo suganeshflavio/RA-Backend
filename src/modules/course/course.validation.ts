@@ -12,10 +12,6 @@ export const createCourseSchema = z
             .string()
             .min(3, "Course name must contain minimum 3 characters"),
 
-        // description: z
-        //     .string()
-        //     .optional(),
-
         thumbnail: z
             .string()
             .optional(),
@@ -40,43 +36,60 @@ export const createCourseSchema = z
 
         installments: z
             .array(installmentSchema)
-            .optional(),
+            .optional()
 
-        subjects: z
-            .array(z.string())
-            .default([])
+    });
 
-    })
-    // .superRefine((data, ctx) => {
+export const updateCourseSchema = createCourseSchema.extend({
 
-    //     if (
-    //         data.accessType === "paid" &&
-    //         !data.price
-    //     ) {
-    //         ctx.addIssue({
-    //             code: "custom",
-    //             path: ["price"],
-    //             message: "Price is required for paid courses"
-    //         });
-    //     }
+    isActive: z.boolean().optional()
 
-    //     if (
-    //         data.enableEmi &&
-    //         (!data.installments || data.installments.length === 0)
-    //     ) {
-    //         ctx.addIssue({
-    //             code: "custom",
-    //             path: ["installments"],
-    //             message: "Installments are required when EMI is enabled"
-    //         });
-    //     }
+});
 
-    // });
+export const linkSubjectSchema = z.object({
 
-    export const updateCourseSchema = createCourseSchema.extend({
+    subjectId: z.string().min(1, "subjectId is required"),
 
-    isActive: z.boolean().optional(),
+    classId: z.string().min(1).optional(),
 
-    subjects: z.array(z.string()).optional()
+    order: z.coerce.number().optional()
+
+});
+
+export const linkTopicSchema = z.object({
+
+    topicId: z.string().min(1, "topicId is required"),
+
+    order: z.coerce.number().optional()
+
+});
+
+export const linkVideoSchema = z.object({
+
+    videoId: z.string().min(1, "videoId is required"),
+
+    classId: z.string().min(1).optional(),
+
+    order: z.coerce.number().optional()
+
+});
+
+export const linkNotesSchema = z.object({
+
+    notesId: z.string().min(1, "notesId is required"),
+
+    classId: z.string().min(1).optional(),
+
+    order: z.coerce.number().optional()
+
+});
+
+export const linkMcqTestSchema = z.object({
+
+    testId: z.string().min(1, "testId is required"),
+
+    classId: z.string().min(1).optional(),
+
+    order: z.coerce.number().optional()
 
 });

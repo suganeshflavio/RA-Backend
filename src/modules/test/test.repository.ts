@@ -13,21 +13,12 @@ const prismaDb = prisma as any;
 export const getVideoByIdRepository = async (videoId: string) => {
   return prisma.video.findUnique({
     where: { id: videoId },
-    include: {
-      course: {
-        select: {
-          id: true,
-          courseName: true,
-        },
-      },
-    },
   });
 };
 
 export const createTestRepository = async (payload: CreateTestDto) => {
   return prismaDb.testQuestion.create({
     data: {
-      videoId: payload.videoId,
       testName: payload.testName,
       marksPerQuestion: payload.marksPerQuestion,
       questions: {
@@ -35,20 +26,6 @@ export const createTestRepository = async (payload: CreateTestDto) => {
       },
     },
     include: {
-      video: {
-        select: {
-          id: true,
-          videoName: true,
-          subject: true,
-          chapter: true,
-          course: {
-            select: {
-              id: true,
-              courseName: true,
-            },
-          },
-        },
-      },
       questions: true,
     },
   });
@@ -60,15 +37,17 @@ export const getTestsRepository = async (query: GetTestsQueryDto) => {
   const skip = (page - 1) * limit;
 
   const where: {
-    videoId?: string;
     testName?: {
       contains: string;
       mode: "insensitive";
     };
+    topics?: {
+      some: { id: string };
+    };
   } = {};
 
-  if (query.videoId) {
-    where.videoId = query.videoId;
+  if (query.topicId) {
+    where.topics = { some: { id: query.topicId } };
   }
 
   if (query.search) {
@@ -88,18 +67,10 @@ export const getTestsRepository = async (query: GetTestsQueryDto) => {
             attempts: true,
           },
         },
-        video: {
+        topics: {
           select: {
             id: true,
-            videoName: true,
-            subject: true,
-            chapter: true,
-            course: {
-              select: {
-                id: true,
-                courseName: true,
-              },
-            },
+            name: true,
           },
         },
       },
@@ -119,18 +90,10 @@ export const getTestByIdRepository = async (testId: string) => {
   return prismaDb.testQuestion.findUnique({
     where: { id: testId },
     include: {
-      video: {
+      topics: {
         select: {
           id: true,
-          videoName: true,
-          subject: true,
-          chapter: true,
-          course: {
-            select: {
-              id: true,
-              courseName: true,
-            },
-          },
+          name: true,
         },
       },
       questions: {
@@ -142,22 +105,14 @@ export const getTestByIdRepository = async (testId: string) => {
   });
 };
 
-export const getTestsWithQuestionsByVideoIdRepository = async (videoId: string) => {
+export const getTestsWithQuestionsByTopicIdRepository = async (topicId: string) => {
   return prismaDb.testQuestion.findMany({
-    where: { videoId },
+    where: { topics: { some: { id: topicId } } },
     include: {
-      video: {
+      topics: {
         select: {
           id: true,
-          videoName: true,
-          subject: true,
-          chapter: true,
-          course: {
-            select: {
-              id: true,
-              courseName: true,
-            },
-          },
+          name: true,
         },
       },
       questions: {
@@ -177,18 +132,10 @@ export const updateTestRepository = async (testId: string, payload: UpdateTestDt
     where: { id: testId },
     data: payload,
     include: {
-      video: {
+      topics: {
         select: {
           id: true,
-          videoName: true,
-          subject: true,
-          chapter: true,
-          course: {
-            select: {
-              id: true,
-              courseName: true,
-            },
-          },
+          name: true,
         },
       },
       questions: {
@@ -249,18 +196,13 @@ export const getTestWithQuestionsRepository = async (testId: string) => {
           createdAt: "asc",
         },
       },
-      video: {
-        select: {
-          id: true,
-        },
-      },
     },
   });
 };
 
 export const createStudentAttemptRepository = async (data: {
   studentId: string;
-  videoId: string;
+  videoId?: string;
   testId: string;
   status: "IN_PROGRESS" | "COMPLETED";
   totalQuestions: number;
@@ -319,14 +261,6 @@ const attemptInclude = {
     select: {
       id: true,
       videoName: true,
-      subject: true,
-      chapter: true,
-      course: {
-        select: {
-          id: true,
-          courseName: true,
-        },
-      },
     },
   },
   test: {
