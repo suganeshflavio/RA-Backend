@@ -48,6 +48,10 @@ model User {
 
   accesses UserAccess[]
 
+  notesAccesses UserNotesAccess[]
+
+  mcqTestAccesses UserMcqTestAccess[]
+
   sessionToken String?
 
   isActive Boolean @default(true)
@@ -65,6 +69,184 @@ model User {
   studentAttempts StudentAttempt[]
 }
 
+// Content hierarchy: Subject -> Class -> Chapter -> Topic.
+// A Topic is the "video name" node under which independently
+// created Video / MCQ test / Notes are optionally linked.
+
+model Subject {
+  id String @id @default(cuid())
+
+  name String @unique
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  classes Class[]
+
+  courses CourseSubject[]
+}
+
+model Class {
+  id String @id @default(cuid())
+
+  name String
+
+  subjectId String
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  chapters Chapter[]
+
+  courseSubjects CourseSubject[]
+
+  courseVideos CourseVideo[]
+
+  courseNotes CourseNotes[]
+
+  courseMcqTests CourseMcqTest[]
+
+  @@unique([subjectId, name])
+  @@index([subjectId])
+}
+
+model Chapter {
+  id String @id @default(cuid())
+
+  name String
+
+  classId String
+
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  topics Topic[]
+
+  @@unique([classId, name])
+  @@index([classId])
+}
+
+model Topic {
+  id String @id @default(cuid())
+
+  name String
+
+  chapterId String
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  order Int?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  videos Video[]
+
+  mcqTests TestQuestion[]
+
+  notes Notes[]
+
+  courseTopics CourseTopic[]
+
+  @@index([chapterId])
+}
+
+// Independent, reusable content units. Each can be linked to any
+// number of Topics (content library) and any number of Courses
+// (course assembly) via the join tables below.
+
+model Video {
+  id String @id @default(cuid())
+
+  videoName String
+
+  videoFileId String?
+
+  videoFileName String?
+
+  videoSize Int?
+
+  description String?
+
+  duration String?
+
+  isActive Boolean @default(true)
+
+  isPreview Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  topics Topic[]
+
+  courses CourseVideo[]
+
+  userAccesses UserAccess[]
+
+  comments Comment[]
+
+  attempts StudentAttempt[]
+}
+
+// A B2 file backing an inline image/diagram embedded in rich-text content
+// (MCQ question/option/explanation HTML). The image's <img src> in that
+// stored HTML points at a stable `/api/uploads/image/:id` URL rather than a
+// raw B2 link, since B2 is a private bucket and signed URLs expire — this
+// row lets that stable URL redirect to a freshly-minted signed URL on every
+// request, the same way Video/Notes already resolve fresh URLs on read.
+model InlineImage {
+  id String @id @default(cuid())
+
+  fileId String
+
+  fileName String
+
+  createdAt DateTime @default(now())
+}
+
+model Notes {
+  id String @id @default(cuid())
+
+  title String
+
+  notesUrl String?
+
+  notesFileId String?
+
+  notesFileName String?
+
+  description String?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  topics Topic[]
+
+  courses CourseNotes[]
+
+  userAccesses UserNotesAccess[]
+}
+
 model Course {
   id String @id @default(cuid())
 
@@ -80,69 +262,174 @@ model Course {
 
   userAccesses UserAccess[]
 
+  userNotesAccesses UserNotesAccess[]
+
+  userMcqTestAccesses UserMcqTestAccess[]
+
   validityMonths Int?
 
   enableEmi Boolean?
 
   installments Json?
 
-  subjects String[]
-
   isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
 
   updatedAt DateTime @updatedAt
 
-  videos Video[]
+  subjects CourseSubject[]
+
+  topics CourseTopic[]
+
+  videos CourseVideo[]
+
+  notes CourseNotes[]
+
+  mcqTests CourseMcqTest[]
 }
 
-model Video {
+model CourseSubject {
   id String @id @default(cuid())
 
   courseId String
 
-  subject String?
+  subjectId String
 
-  chapter String?
+  // Optional: scopes this link to one Class of the subject (e.g. a course
+  // that only teaches 11th-grade English). Null means unrestricted — the
+  // app falls back to auto-resolving the class from the student's profile.
+  // Linking the same subject multiple times with different classIds lets a
+  // single course bundle more than one grade of the same subject.
+  classId String?
 
-  videoName String
+  order Int?
 
-  videoFileId String?
+  createdAt DateTime @default(now())
 
-  videoFileName String?
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  videoSize Int?
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
-  notesUrl String?
+  class Class? @relation(fields: [classId], references: [id], onDelete: Cascade)
 
-  notesFileId String?
+  @@unique([courseId, subjectId, classId])
+  @@index([courseId])
+  @@index([subjectId])
+  @@index([classId])
+}
 
-  notesFileName String?
+// A Topic belongs to exactly one Chapter -> Class -> Subject, so linking a
+// Topic directly is unambiguous. This is the primary way a course now
+// grants access to the Subject/Class/Chapter/Topic hierarchy in the admin
+// UI — the Subject/Class/Chapter pickers there are just how you find the
+// Topic, not separate grants of their own.
+model CourseTopic {
+  id String @id @default(cuid())
 
-  description String?
+  courseId String
 
-  duration String?
+  topicId String
 
   order Int?
 
   isActive Boolean @default(true)
 
-  isPreview Boolean @default(false)
-
   createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  userAccesses UserAccess[]
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
-  comments Comment[]
+  @@unique([courseId, topicId])
+  @@index([courseId])
+  @@index([topicId])
+}
 
-  tests TestQuestion[]
+model CourseVideo {
+  id String @id @default(cuid())
 
-  attempts StudentAttempt[]
+  courseId String
+
+  videoId String
+
+  // Optional: which Class this grant is for (same rationale as
+  // CourseSubject.classId — a video can appear under more than one class's
+  // topics, so this disambiguates which one the course is granting).
+  classId String?
+
+  order Int?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  class Class? @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, videoId, classId])
+  @@index([courseId])
+  @@index([videoId])
+  @@index([classId])
+}
+
+model CourseNotes {
+  id String @id @default(cuid())
+
+  courseId String
+
+  notesId String
+
+  // See CourseVideo.classId.
+  classId String?
+
+  order Int?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  notes Notes @relation(fields: [notesId], references: [id], onDelete: Cascade)
+
+  class Class? @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, notesId, classId])
+  @@index([courseId])
+  @@index([notesId])
+  @@index([classId])
+}
+
+model CourseMcqTest {
+  id String @id @default(cuid())
+
+  courseId String
+
+  testId String
+
+  // See CourseVideo.classId.
+  classId String?
+
+  order Int?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  test TestQuestion @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  class Class? @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, testId, classId])
+  @@index([courseId])
+  @@index([testId])
+  @@index([classId])
 }
 
 model Comment {
@@ -192,15 +479,31 @@ model Testimonial {
   @@index([userId])
 }
 
+model Enquiry {
+  id String @id @default(cuid())
+
+  name String
+
+  email String
+
+  category String
+
+  message String
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([email])
+}
+
 model UserAccess {
   id String @id @default(cuid())
 
   userId   String
   courseId String
   videoId  String
-
-  subject String
-  chapter String
 
   isActive Boolean @default(true)
 
@@ -212,16 +515,60 @@ model UserAccess {
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, videoId])
+  @@unique([userId, courseId, videoId])
   @@index([userId])
   @@index([courseId])
   @@index([videoId])
 }
 
-model TestQuestion {
+model UserNotesAccess {
   id String @id @default(cuid())
 
-  videoId String
+  userId   String
+  courseId String
+  notesId  String
+
+  isActive Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  notes Notes @relation(fields: [notesId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId, notesId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([notesId])
+}
+
+model UserMcqTestAccess {
+  id String @id @default(cuid())
+
+  userId   String
+  courseId String
+  testId   String
+
+  isActive Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  test TestQuestion @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId, testId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([testId])
+}
+
+model TestQuestion {
+  id String @id @default(cuid())
 
   testName String
 
@@ -231,13 +578,15 @@ model TestQuestion {
 
   updatedAt DateTime @updatedAt
 
-  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  topics Topic[]
+
+  courses CourseMcqTest[]
 
   questions TestQuestionItem[]
 
   attempts StudentAttempt[]
 
-  @@index([videoId])
+  userAccesses UserMcqTestAccess[]
 }
 
 model TestQuestionItem {
@@ -275,7 +624,7 @@ model StudentAttempt {
 
   studentId String
 
-  videoId String
+  videoId String?
 
   testId String
 
@@ -303,7 +652,7 @@ model StudentAttempt {
 
   student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  video Video? @relation(fields: [videoId], references: [id], onDelete: SetNull)
 
   test TestQuestion @relation(fields: [testId], references: [id], onDelete: Cascade)
 
@@ -332,7 +681,7 @@ model StudentAttemptAnswer {
 
   question TestQuestionItem @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  @@unique([attemptId, questionId])
   @@index([attemptId])
   @@index([questionId])
-  @@unique([attemptId, questionId])
 }
