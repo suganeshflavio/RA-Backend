@@ -18,11 +18,14 @@ import { authorizeB2, B2_BUCKET_ID } from "../src/config/b2";
 const B2_UPDATE_BUCKET_PATH = "/b2api/v2/b2_update_bucket";
 
 const main = async () => {
-
-  const origins = (process.env.B2_CORS_ORIGINS ?? "")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const origins = Array.from(
+    new Set(
+      (process.env.B2_CORS_ORIGINS ?? "")
+        .split(",")
+        .map((origin) => origin.trim().replace(/\/+$/, ""))
+        .filter(Boolean)
+    )
+  );
 
   if (origins.length === 0) {
     throw new Error(
@@ -50,9 +53,36 @@ const main = async () => {
             "b2_upload_part",
             "b2_download_file_by_name",
             "b2_download_file_by_id",
+            "s3_head",
+            "s3_get",
+            "s3_put",
           ],
           allowedHeaders: ["*"],
-          exposeHeaders: ["x-bz-content-sha1", "x-bz-file-name"],
+          exposeHeaders: [
+            "x-bz-content-sha1",
+            "x-bz-file-name",
+            "content-length",
+            "etag",
+          ],
+          maxAgeSeconds: 3600,
+        },
+        {
+          corsRuleName: "downloadFromAnyHttpsOrigin",
+          allowedOrigins: ["https"],
+          allowedOperations: [
+            "b2_download_file_by_id",
+            "b2_download_file_by_name",
+          ],
+          allowedHeaders: ["authorization", "range"],
+          exposeHeaders: ["x-bz-content-sha1"],
+          maxAgeSeconds: 3600,
+        },
+        {
+          corsRuleName: "s3DownloadFromAnyHttpsOrigin",
+          allowedOrigins: ["https"],
+          allowedOperations: ["s3_head", "s3_get"],
+          allowedHeaders: ["authorization", "range"],
+          exposeHeaders: null,
           maxAgeSeconds: 3600,
         },
       ],
