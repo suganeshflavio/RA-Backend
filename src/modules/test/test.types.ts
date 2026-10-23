@@ -18,6 +18,12 @@ export interface CreateTestDto {
   questions: CreateTestQuestionItemDto[];
 }
 
+export interface ImportTestFromFileDto {
+  testName: string;
+  marksPerQuestion: number;
+  fileName: string;
+}
+
 export interface UpdateTestDto {
   testName?: string;
   marksPerQuestion?: number;

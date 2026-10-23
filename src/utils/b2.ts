@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { authorizeB2, B2_BUCKET_ID, B2_BUCKET_NAME } from "../config/b2";
+import { AppError } from "./errors/AppError";
 
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
 
@@ -55,20 +56,29 @@ export const uploadFileToB2 = async (
   keyPrefix: string
 ): Promise<B2UploadResult> => {
 
-  const { uploadUrl, authorizationToken } = await getB2UploadUrl();
+  return uploadBufferToB2(file.buffer, file.originalname, file.mimetype, keyPrefix);
 
-  const buffer = file.buffer;
+};
+
+export const uploadBufferToB2 = async (
+  buffer: Buffer,
+  originalName: string,
+  contentType: string,
+  keyPrefix: string
+): Promise<B2UploadResult> => {
+
+  const { uploadUrl, authorizationToken } = await getB2UploadUrl();
 
   const sha1 = crypto.createHash("sha1").update(buffer).digest("hex");
 
-  const fileName = `${keyPrefix}/${Date.now()}-${sanitizeFileName(file.originalname)}`;
+  const fileName = `${keyPrefix}/${Date.now()}-${sanitizeFileName(originalName)}`;
 
   const res = await fetch(uploadUrl, {
     method: "POST",
     headers: {
       Authorization: authorizationToken,
       "X-Bz-File-Name": encodeB2FileName(fileName),
-      "Content-Type": file.mimetype || "b2/x-auto",
+      "Content-Type": contentType || "b2/x-auto",
       "X-Bz-Content-Sha1": sha1,
       "Content-Length": String(buffer.length)
     },
@@ -118,6 +128,54 @@ export const getB2SignedUrl = async (
   const path = `/file/${B2_BUCKET_NAME}/${encodeB2FileName(fileName)}?Authorization=${data.authorizationToken}`;
 
   return `${CDN_BASE_URL || session.downloadUrl}${path}`;
+
+};
+
+interface B2DownloadResult {
+  fileId: string;
+  buffer: Buffer;
+}
+
+// Reads a private bucket file into memory. Refuses (without reading the body)
+// anything larger than maxBytes, since the uploader controls what lands at a
+// client-side upload URL and the size it declared up front isn't enforced.
+export const downloadB2File = async (
+  fileName: string,
+  maxBytes: number
+): Promise<B2DownloadResult> => {
+
+  const session = await authorizeB2();
+
+  const res = await fetch(`${session.downloadUrl}/file/${B2_BUCKET_NAME}/${encodeB2FileName(fileName)}`, {
+    headers: { Authorization: session.authorizationToken }
+  });
+
+  if (res.status === 404) {
+    throw new AppError("Uploaded file not found", 404);
+  }
+
+  if (!res.ok) {
+    throw new Error(`B2 download failed: ${res.status} ${await res.text()}`);
+  }
+
+  const fileId = res.headers.get("x-bz-file-id") ?? "";
+
+  const declaredSize = Number(res.headers.get("content-length") ?? 0);
+
+  if (declaredSize > maxBytes) {
+    await res.body?.cancel();
+    await deleteB2File(fileId, fileName);
+    throw new AppError(`File exceeds the ${Math.round(maxBytes / (1024 * 1024))} MB limit`, 400);
+  }
+
+  const buffer = Buffer.from(await res.arrayBuffer());
+
+  if (buffer.length > maxBytes) {
+    await deleteB2File(fileId, fileName);
+    throw new AppError(`File exceeds the ${Math.round(maxBytes / (1024 * 1024))} MB limit`, 400);
+  }
+
+  return { fileId, buffer };
 
 };
 

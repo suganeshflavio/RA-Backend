@@ -20,6 +20,26 @@ export const createTestSchema = z.object({
   questions: z.array(createQuestionSchema).min(1, "At least one question is required"),
 });
 
+export const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
+
+export const mcqImportUploadUrlSchema = z.object({
+  fileName: z
+    .string()
+    .min(1, "fileName is required")
+    .refine((name) => /\.docx$/i.test(name), "Only Word (.docx) files are supported"),
+  fileSize: z.coerce
+    .number()
+    .int()
+    .positive("fileSize is required")
+    .max(MAX_IMPORT_FILE_BYTES, "File must be 5 MB or smaller"),
+});
+
+export const importTestFromFileSchema = z.object({
+  testName: z.string().trim().min(1, "testName is required"),
+  marksPerQuestion: z.coerce.number().int().positive("marksPerQuestion must be > 0"),
+  fileName: z.string().min(1, "fileName is required"),
+});
+
 export const updateTestSchema = z
   .object({
     testName: z.string().min(1).optional(),

@@ -5,6 +5,8 @@ import { AppError } from "../../utils/errors/AppError";
 import {
   addQuestionSchema,
   createTestSchema,
+  importTestFromFileSchema,
+  mcqImportUploadUrlSchema,
   submitAttemptSchema,
   updateQuestionSchema,
   updateTestSchema,
@@ -25,6 +27,10 @@ import {
   updateQuestionService,
   updateTestService,
 } from "./test.service";
+import {
+  importTestFromFileService,
+  requestMcqImportUploadUrlService,
+} from "./test.import.service";
 
 export const createTest = asyncHandler(async (req: Request, res: Response) => {
   const payload = createTestSchema.parse(req.body);
@@ -194,5 +200,25 @@ export const getMyAttempts = asyncHandler(
     const data = await getMyAttemptsService(req.user!.userId);
 
     return successResponse(res, "My attempts fetched successfully", data);
+  },
+);
+
+export const requestMcqImportUploadUrl = asyncHandler(
+  async (req: Request, res: Response) => {
+    const payload = mcqImportUploadUrlSchema.parse(req.body);
+
+    const data = await requestMcqImportUploadUrlService(payload);
+
+    return successResponse(res, "Upload URL generated successfully", data);
+  },
+);
+
+export const importTestFromFile = asyncHandler(
+  async (req: Request, res: Response) => {
+    const payload = importTestFromFileSchema.parse(req.body);
+
+    const data = await importTestFromFileService(payload);
+
+    return successResponse(res, "Test imported successfully", data, 201);
   },
 );

@@ -12,6 +12,8 @@ import {
   getStudentTestsByTopicId,
   getTestById,
   getTests,
+  importTestFromFile,
+  requestMcqImportUploadUrl,
   submitAttempt,
   updateQuestion,
   updateTest,
@@ -21,6 +23,8 @@ const router = Router();
 
 router.post("/", authenticate, requireAdmin, createTest);
 router.get("/", authenticate, requireAdmin, getTests);
+router.post("/import/upload-url", authenticate, requireAdmin, requestMcqImportUploadUrl);
+router.post("/import", authenticate, requireAdmin, importTestFromFile);
 router.get("/student/topic/:topicId", authenticate, getStudentTestsByTopicId);
 router.get("/student/:id", authenticate, getStudentTestById);
 router.get("/:id", authenticate, requireAdmin, getTestById);
