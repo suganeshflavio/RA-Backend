@@ -574,6 +574,9 @@ model TestQuestion {
 
   marksPerQuestion Int
 
+  // marks deducted for each wrong answer; 0 = no negative marking
+  negativeMarksPerQuestion Float @default(0)
+
   createdAt DateTime @default(now())
 
   updatedAt DateTime @updatedAt
@@ -638,9 +641,13 @@ model StudentAttempt {
 
   marksPerQuestion Int
 
+  // snapshot of the test's setting when the attempt was graded
+  negativeMarksPerQuestion Float @default(0)
+
   totalMarks Int
 
-  obtainedMarks Int
+  // can be fractional or below zero once negative marks apply
+  obtainedMarks Float
 
   startedAt DateTime
 

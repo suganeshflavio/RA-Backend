@@ -38,6 +38,7 @@ const formatAttempt = (attempt: any): AttemptDetails => ({
   correctAnswers: attempt.correctAnswers,
   wrongAnswers: attempt.wrongAnswers,
   marksPerQuestion: attempt.marksPerQuestion,
+  negativeMarksPerQuestion: attempt.negativeMarksPerQuestion,
   totalMarks: attempt.totalMarks,
   obtainedMarks: attempt.obtainedMarks,
   startedAt: attempt.startedAt,
@@ -64,6 +65,7 @@ const formatStudentTest = (test: any) => ({
   id: test.id,
   testName: test.testName,
   marksPerQuestion: test.marksPerQuestion,
+  negativeMarksPerQuestion: test.negativeMarksPerQuestion,
   createdAt: test.createdAt,
   updatedAt: test.updatedAt,
   topics: test.topics,
@@ -127,6 +129,13 @@ export const updateTestService = async (testId: string, payload: UpdateTestDto) 
 
   if (!existing) {
     throw new AppError("Test not found", 404);
+  }
+
+  const marksPerQuestion = payload.marksPerQuestion ?? existing.marksPerQuestion;
+  const negativeMarksPerQuestion = payload.negativeMarksPerQuestion ?? existing.negativeMarksPerQuestion;
+
+  if (negativeMarksPerQuestion > marksPerQuestion) {
+    throw new AppError("negativeMarksPerQuestion can't be more than marksPerQuestion", 400);
   }
 
   return updateTestRepository(testId, payload);
@@ -248,7 +257,9 @@ export const submitAttemptService = async (
   const totalQuestions = test.questions.length;
   const wrongAnswers = totalQuestions - correctAnswers;
   const totalMarks = totalQuestions * test.marksPerQuestion;
-  const obtainedMarks = correctAnswers * test.marksPerQuestion;
+  // rounded to 2 places so e.g. 0.33 deductions don't leave float noise
+  const obtainedMarks =
+    Math.round((correctAnswers * test.marksPerQuestion - wrongAnswers * test.negativeMarksPerQuestion) * 100) / 100;
 
   const attempt = await createStudentAttemptRepository({
     studentId,
@@ -259,6 +270,7 @@ export const submitAttemptService = async (
     correctAnswers,
     wrongAnswers,
     marksPerQuestion: test.marksPerQuestion,
+    negativeMarksPerQuestion: test.negativeMarksPerQuestion,
     totalMarks,
     obtainedMarks,
     startedAt: payload.startedAt,

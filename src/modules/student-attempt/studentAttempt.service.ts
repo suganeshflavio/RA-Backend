@@ -15,6 +15,7 @@ const formatAttempt = (attempt: any) => ({
   correctAnswers: attempt.correctAnswers,
   wrongAnswers: attempt.wrongAnswers,
   marksPerQuestion: attempt.marksPerQuestion,
+  negativeMarksPerQuestion: attempt.negativeMarksPerQuestion,
   totalMarks: attempt.totalMarks,
   obtainedMarks: attempt.obtainedMarks,
   startedAt: attempt.startedAt,

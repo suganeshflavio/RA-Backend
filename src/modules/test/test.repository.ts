@@ -21,6 +21,7 @@ export const createTestRepository = async (payload: CreateTestDto) => {
     data: {
       testName: payload.testName,
       marksPerQuestion: payload.marksPerQuestion,
+      negativeMarksPerQuestion: payload.negativeMarksPerQuestion ?? 0,
       questions: {
         create: payload.questions,
       },
@@ -209,6 +210,7 @@ export const createStudentAttemptRepository = async (data: {
   correctAnswers: number;
   wrongAnswers: number;
   marksPerQuestion: number;
+  negativeMarksPerQuestion: number;
   totalMarks: number;
   obtainedMarks: number;
   startedAt: Date;
@@ -229,6 +231,7 @@ export const createStudentAttemptRepository = async (data: {
       correctAnswers: data.correctAnswers,
       wrongAnswers: data.wrongAnswers,
       marksPerQuestion: data.marksPerQuestion,
+      negativeMarksPerQuestion: data.negativeMarksPerQuestion,
       totalMarks: data.totalMarks,
       obtainedMarks: data.obtainedMarks,
       startedAt: data.startedAt,

@@ -15,18 +15,21 @@ export interface CreateTestQuestionItemDto {
 export interface CreateTestDto {
   testName: string;
   marksPerQuestion: number;
+  negativeMarksPerQuestion?: number;
   questions: CreateTestQuestionItemDto[];
 }
 
 export interface ImportTestFromFileDto {
   testName: string;
   marksPerQuestion: number;
+  negativeMarksPerQuestion?: number;
   fileName: string;
 }
 
 export interface UpdateTestDto {
   testName?: string;
   marksPerQuestion?: number;
+  negativeMarksPerQuestion?: number;
 }
 
 export interface AddQuestionDto extends CreateTestQuestionItemDto {}
@@ -80,6 +83,7 @@ export type AttemptDetails = {
   correctAnswers: number;
   wrongAnswers: number;
   marksPerQuestion: number;
+  negativeMarksPerQuestion: number;
   totalMarks: number;
   obtainedMarks: number;
   startedAt: Date;

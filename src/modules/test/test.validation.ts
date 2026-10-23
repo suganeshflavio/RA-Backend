@@ -14,11 +14,27 @@ const createQuestionSchema = z.object({
   explanation: z.string().optional(),
 });
 
+const negativeMarksSchema = z.coerce
+  .number()
+  .min(0, "negativeMarksPerQuestion can't be below 0")
+  // tolerance because e.g. 0.29 * 100 is 28.999999999999996 in floating point
+  .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6, "Use at most 2 decimal places");
+
+// a wrong answer can't cost more than a right answer earns
+const negativeWithinMarks = <T extends { marksPerQuestion: number; negativeMarksPerQuestion?: number | undefined }>(value: T) =>
+  (value.negativeMarksPerQuestion ?? 0) <= value.marksPerQuestion;
+
+const NEGATIVE_WITHIN_MARKS_ERROR = {
+  message: "negativeMarksPerQuestion can't be more than marksPerQuestion",
+  path: ["negativeMarksPerQuestion"],
+};
+
 export const createTestSchema = z.object({
   testName: z.string().min(1, "testName is required"),
   marksPerQuestion: z.coerce.number().int().positive("marksPerQuestion must be > 0"),
+  negativeMarksPerQuestion: negativeMarksSchema.optional(),
   questions: z.array(createQuestionSchema).min(1, "At least one question is required"),
-});
+}).refine(negativeWithinMarks, NEGATIVE_WITHIN_MARKS_ERROR);
 
 export const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
 
@@ -37,13 +53,15 @@ export const mcqImportUploadUrlSchema = z.object({
 export const importTestFromFileSchema = z.object({
   testName: z.string().trim().min(1, "testName is required"),
   marksPerQuestion: z.coerce.number().int().positive("marksPerQuestion must be > 0"),
+  negativeMarksPerQuestion: negativeMarksSchema.optional(),
   fileName: z.string().min(1, "fileName is required"),
-});
+}).refine(negativeWithinMarks, NEGATIVE_WITHIN_MARKS_ERROR);
 
 export const updateTestSchema = z
   .object({
     testName: z.string().min(1).optional(),
     marksPerQuestion: z.coerce.number().int().positive().optional(),
+    negativeMarksPerQuestion: negativeMarksSchema.optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required",

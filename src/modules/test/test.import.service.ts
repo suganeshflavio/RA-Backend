@@ -149,6 +149,7 @@ export const importTestFromFileService = async (payload: ImportTestFromFileDto) 
     createTestSchema.parse({
       testName: payload.testName,
       marksPerQuestion: payload.marksPerQuestion,
+      negativeMarksPerQuestion: payload.negativeMarksPerQuestion,
       questions,
     }),
   );
